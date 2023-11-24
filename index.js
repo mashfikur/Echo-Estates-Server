@@ -30,7 +30,7 @@ async function run() {
 
 
     // ----------Databses & Collections----------
-
+    const usersCollection = client.db("echoEstatesDB").collection("users")
 
 
     // ------------Custom Middlewares----------
@@ -45,7 +45,13 @@ async function run() {
 
 
     //POST Requests
+    app.post("/api/v1/add-user",async (req,res) => {
+        const userInfo=req.body
 
+        const result = await usersCollection.insertOne(userInfo)
+
+        res.send(result)
+    })
 
 
 
@@ -56,8 +62,7 @@ async function run() {
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
-  } finally {
-  }
+  } finally {}
 }
 run().catch(console.dir);
 
