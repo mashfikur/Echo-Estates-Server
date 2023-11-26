@@ -29,12 +29,24 @@ async function run() {
   try {
     // ----------Databses & Collections----------
     const usersCollection = client.db("echoEstatesDB").collection("users");
+    const propertyCollection = client
+      .db("echoEstatesDB")
+      .collection("properties");
 
     // ------------Custom Middlewares----------
 
     //-------------API Endpoints--------------
 
     // GET Requests
+    app.get("/api/v1/user/check-agent/:id", async (req, res) => {
+      const id = req.params.id;
+      const user = await usersCollection.findOne({ userId: id });
+      if (user.role === "agent") {
+        return res.send({ isAgent: true });
+      } else {
+        return res.send({ isAgent: false });
+      }
+    });
 
     //POST Requests
     app.post("/api/v1/add-user", async (req, res) => {
@@ -54,14 +66,10 @@ async function run() {
       }
     });
 
-    app.post("/api/v1/user/check-agent/:id", async (req, res) => {
-      const id = req.params.id;
-      const user = await usersCollection.findOne({ userId: id });
-      if (user.role === "agent") {
-        return res.send({ isAgent: true });
-      } else {
-        return res.send({ isAgent: false });
-      }
+    app.post("/api/v1/user/add-property", async (req, res) => {
+      const info = req.body;
+      const result = await propertyCollection.insertOne(info);
+      res.send(result);
     });
 
     // Send a ping to confirm a successful connection
