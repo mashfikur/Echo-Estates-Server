@@ -51,7 +51,13 @@ async function run() {
     app.get("/api/v1/agent/added-properties/:id", async (req, res) => {
       const id = req.params.id;
       const result = await propertyCollection.find({ agent_id: id }).toArray();
-      res.send(result)
+      res.send(result);
+    });
+
+    app.get("/api/v1/user/all-properties", async (req, res) => {
+      const query = { verification_status: "verified" };
+      const result = await propertyCollection.find(query).toArray();
+      res.send(result);
     });
 
     //POST Requests
