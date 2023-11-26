@@ -27,42 +27,50 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-
-
     // ----------Databses & Collections----------
-    const usersCollection = client.db("echoEstatesDB").collection("users")
-
+    const usersCollection = client.db("echoEstatesDB").collection("users");
 
     // ------------Custom Middlewares----------
-
-
-
 
     //-------------API Endpoints--------------
 
     // GET Requests
 
-
-
     //POST Requests
-    app.post("/api/v1/add-user",async (req,res) => {
-        const userInfo=req.body
+    app.post("/api/v1/add-user", async (req, res) => {
+      const userInfo = req.body;
 
-        const result = await usersCollection.insertOne(userInfo)
+      const { userId } = userInfo;
 
-        res.send(result)
-    })
+      const user = await usersCollection.findOne({ userId: userId });
 
+      if (!user) {
+        const result = await usersCollection.insertOne(userInfo);
+        res.send(result);
+        return;
+      } else {
+        res.send({ message: "User Already Exists" });
+        return;
+      }
+    });
 
-
-
+    app.post("/api/v1/user/check-agent/:id", async (req, res) => {
+      const id = req.params.id;
+      const user = await usersCollection.findOne({ userId: id });
+      if (user.role === "agent") {
+        return res.send({ isAgent: true });
+      } else {
+        return res.send({ isAgent: false });
+      }
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
-  } finally {}
+  } finally {
+  }
 }
 run().catch(console.dir);
 
