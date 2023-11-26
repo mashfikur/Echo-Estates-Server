@@ -48,6 +48,12 @@ async function run() {
       }
     });
 
+    app.get("/api/v1/agent/added-properties/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await propertyCollection.find({ agent_id: id }).toArray();
+      res.send(result)
+    });
+
     //POST Requests
     app.post("/api/v1/add-user", async (req, res) => {
       const userInfo = req.body;
