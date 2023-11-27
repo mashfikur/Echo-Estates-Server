@@ -61,6 +61,11 @@ async function run() {
       }
     });
 
+    app.get("/api/v1/admin/get-users", async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    });
+
     app.get("/api/v1/agent/added-properties/:id", async (req, res) => {
       const id = req.params.id;
       const result = await propertyCollection.find({ agent_id: id }).toArray();
