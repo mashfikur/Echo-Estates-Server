@@ -133,6 +133,24 @@ async function run() {
       res.send(result);
     });
 
+    // PATCH request
+    app.patch("/api/v1/admin/update-user/:id", async (req, res) => {
+      const id = req.params.id;
+
+      const { role } = req.query;
+      const updatedDoc = {
+        $set: {
+          role: role,
+        },
+      };
+
+      const result = await usersCollection.updateOne(
+        { userId: id },
+        updatedDoc
+      );
+      res.send(result);
+    });
+
     // DELETE request
     app.delete("/api/v1/user/remove-wishlist/:itemId", async (req, res) => {
       const itemId = req.params.itemId;
@@ -141,6 +159,12 @@ async function run() {
         property_id: itemId,
       });
 
+      res.send(result);
+    });
+
+    app.delete("/api/v1/admin/delete-user/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await usersCollection.deleteOne({ userId: id });
       res.send(result);
     });
 
