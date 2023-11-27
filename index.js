@@ -29,6 +29,10 @@ async function run() {
   try {
     // ----------Databses & Collections----------
     const usersCollection = client.db("echoEstatesDB").collection("users");
+    const wishlistCollection = client
+      .db("echoEstatesDB")
+      .collection("wishlist");
+
     const propertyCollection = client
       .db("echoEstatesDB")
       .collection("properties");
@@ -89,6 +93,14 @@ async function run() {
     app.post("/api/v1/user/add-property", async (req, res) => {
       const info = req.body;
       const result = await propertyCollection.insertOne(info);
+      res.send(result);
+    });
+
+    app.post("/api/v1/user/add-to-wishlist", async (req, res) => {
+      const info = req.body;
+
+      const result = await wishlistCollection.insertOne(info);
+
       res.send(result);
     });
 
