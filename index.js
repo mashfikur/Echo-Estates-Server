@@ -45,10 +45,19 @@ async function run() {
     app.get("/api/v1/user/check-agent/:id", async (req, res) => {
       const id = req.params.id;
       const user = await usersCollection.findOne({ userId: id });
-      if (user.role === "agent") {
+      if (user?.role === "agent") {
         return res.send({ isAgent: true });
       } else {
         return res.send({ isAgent: false });
+      }
+    });
+    app.get("/api/v1/user/check-admin/:id", async (req, res) => {
+      const id = req.params.id;
+      const user = await usersCollection.findOne({ userId: id });
+      if (user?.role === "admin") {
+        return res.send({ isAdmin: true });
+      } else {
+        return res.send({ isAdmin: false });
       }
     });
 
@@ -69,6 +78,21 @@ async function run() {
       const result = await propertyCollection.findOne({
         _id: new ObjectId(id),
       });
+      res.send(result);
+    });
+
+    app.get("/api/v1/user/get-wishlist/:id", async (req, res) => {
+      const id = req.params.id;
+      const items = await wishlistCollection
+        .find({ wishlisted_by: id })
+        .toArray();
+
+      const wishlisted = items.map((item) => new ObjectId(item.property_id));
+
+      const result = await propertyCollection
+        .find({ _id: { $in: wishlisted } })
+        .toArray();
+
       res.send(result);
     });
 
@@ -100,6 +124,17 @@ async function run() {
       const info = req.body;
 
       const result = await wishlistCollection.insertOne(info);
+
+      res.send(result);
+    });
+
+    // DELETE request
+    app.delete("/api/v1/user/remove-wishlist/:itemId", async (req, res) => {
+      const itemId = req.params.itemId;
+
+      const result = await wishlistCollection.deleteMany({
+        property_id: itemId,
+      });
 
       res.send(result);
     });
