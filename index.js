@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 
 const app = express();
@@ -57,6 +57,14 @@ async function run() {
     app.get("/api/v1/user/all-properties", async (req, res) => {
       const query = { verification_status: "verified" };
       const result = await propertyCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.get("/api/v1/user/property/details/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await propertyCollection.findOne({
+        _id: new ObjectId(id),
+      });
       res.send(result);
     });
 
