@@ -72,7 +72,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/api/v1/user/all-properties", async (req, res) => {
+    app.get("/api/v1/user/verified-properties", async (req, res) => {
       const query = { verification_status: "verified" };
       const result = await propertyCollection.find(query).toArray();
       res.send(result);
@@ -163,6 +163,20 @@ async function run() {
       const updatedDoc = {
         $set: {
           verification_status: status,
+        },
+      };
+
+      const result = await propertyCollection.updateOne(query, updatedDoc);
+
+      res.send(result);
+    });
+    app.patch("/api/v1/admin/advertise-property/:id", async (req, res) => {
+      const id = req.params.id;
+      const { status } = req.query;
+      const query = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          isAdvertised: status,
         },
       };
 
