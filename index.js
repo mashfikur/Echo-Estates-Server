@@ -54,6 +54,15 @@ async function run() {
       });
     };
 
+    const verfiyAgent = async (req, res, next) => {
+      const { uid } = req.decoded;
+      const user = await usersCollection.findOne({ userId: uid });
+      if (user.role === "agent") {
+        return res.status(403).send({ message: "Forbidden Access" });
+      }
+
+      next();
+    };
     const verfiyAdmin = async (req, res, next) => {
       const { uid } = req.decoded;
       const user = await usersCollection.findOne({ userId: uid });
@@ -100,6 +109,7 @@ async function run() {
     app.get(
       "/api/v1/agent/added-properties/:id",
       verifyToken,
+      verfiyAgent,
       async (req, res) => {
         const id = req.params.id;
         const result = await propertyCollection
@@ -193,11 +203,16 @@ async function run() {
       }
     });
 
-    app.post("/api/v1/user/add-property", verifyToken, async (req, res) => {
-      const info = req.body;
-      const result = await propertyCollection.insertOne(info);
-      res.send(result);
-    });
+    app.post(
+      "/api/v1/agent/add-property",
+      verifyToken,
+      verfiyAgent,
+      async (req, res) => {
+        const info = req.body;
+        const result = await propertyCollection.insertOne(info);
+        res.send(result);
+      }
+    );
 
     app.post("/api/v1/user/add-to-wishlist", verifyToken, async (req, res) => {
       const info = req.body;
