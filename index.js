@@ -58,7 +58,8 @@ async function run() {
     const verfiyAgent = async (req, res, next) => {
       const { uid } = req.decoded;
       const user = await usersCollection.findOne({ userId: uid });
-      if (user.role === "agent") {
+
+      if (!(user.role === "agent")) {
         return res.status(403).send({ message: "Forbidden Access" });
       }
 
@@ -186,6 +187,19 @@ async function run() {
         res.send(result);
       }
     );
+    app.get(
+      "/api/v1/agent/get-requested-properties/:id",
+      verifyToken,
+      async (req, res) => {
+        const id = req.params.id;
+        const result = await offeredCollection
+          .find({
+            agent_id: id,
+          })
+          .toArray();
+        res.send(result);
+      }
+    );
 
     // -----------Create JWT Token---------------
     app.post("/api/v1/auth/create-token", async (req, res) => {
@@ -236,6 +250,22 @@ async function run() {
     app.post("/api/v1/user/offered", verifyToken, async (req, res) => {
       const info = req.body;
       const result = await offeredCollection.insertOne(info);
+      res.send(result);
+    });
+
+    app.post("/api/v1/admin/make-fraud/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { agent_id: id };
+      const updatedDoc = {
+        $set: {
+          role: "fraud",
+        },
+      };
+      const makeFraud = await usersCollection.updateOne(
+        { userId: id },
+        updatedDoc
+      );
+      const result = await propertyCollection.deleteMany(filter);
       res.send(result);
     });
 
@@ -315,6 +345,21 @@ async function run() {
       };
 
       const result = await propertyCollection.updateOne(query, updatedDoc);
+      res.send(result);
+    });
+
+    app.patch("/api/v1/agent/change-property-status/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const { status } = req.query;
+      const updatedDoc = {
+        $set: {
+          status: status,
+        },
+      };
+
+      const result = await offeredCollection.updateOne(filter, updatedDoc);
+
       res.send(result);
     });
 
