@@ -213,6 +213,23 @@ async function run() {
       res.send(result);
     });
 
+    app.patch("/api/v1/user/update-user/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const info = req.body;
+      const updatedDoc = {
+        $set: {
+          property_title: info.property_title,
+          property_location: info.property_location,
+          property_image: info.property_image,
+          price_range: info.price_range,
+        },
+      };
+
+      const result = await propertyCollection.updateOne(query, updatedDoc);
+      res.send(result);
+    });
+
     // DELETE request
     app.delete("/api/v1/user/remove-wishlist/:itemId", async (req, res) => {
       const itemId = req.params.itemId;
