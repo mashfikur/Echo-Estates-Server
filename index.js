@@ -201,6 +201,14 @@ async function run() {
       }
     );
 
+    app.get("/api/v1/advertised-properties", async (req, res) => {
+      const result = await propertyCollection
+        .find({ isAdvertised: "true" })
+        .toArray();
+
+      res.send(result);
+    });
+
     // -----------Create JWT Token---------------
     app.post("/api/v1/auth/create-token", async (req, res) => {
       const info = req.body;
