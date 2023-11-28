@@ -39,6 +39,21 @@ async function run() {
       .collection("properties");
 
     // ------------Custom Middlewares----------
+    const verifyToken = (req, res, next) => {
+      if (!req.headers?.authorization) {
+        return res.status(401).send({ message: "Unauthorised Access" });
+      }
+      const token = req.headers.authorization.split(" ")[1];
+
+      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+          return res.status(403).send({ message: "Forbidden Access" });
+        }
+        console.log(decoded);
+        req.decoded = decoded;
+        next();
+      });
+    };
 
     //-------------API Endpoints--------------
 
@@ -92,8 +107,11 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/api/v1/user/get-wishlist/:id", async (req, res) => {
+    app.get("/api/v1/user/get-wishlist/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
+      if (!req.decoded.uid === id) {
+        return res.status(403).send({ message: "Forbidden Access" });
+      }
       const items = await wishlistCollection
         .find({ wishlisted_by: id })
         .toArray();
