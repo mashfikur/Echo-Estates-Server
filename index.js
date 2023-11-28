@@ -89,8 +89,15 @@ async function run() {
     });
 
     app.get("/api/v1/user/verified-properties", async (req, res) => {
-      const query = { verification_status: "verified" };
-      const result = await propertyCollection.find(query).toArray();
+      const { search } = req.query;
+
+      const filter = {
+        $and: [
+          { verification_status: "verified" },
+          { property_title: { $regex: new RegExp(search, "i") } },
+        ],
+      };
+      const result = await propertyCollection.find(filter).toArray();
       res.send(result);
     });
 
