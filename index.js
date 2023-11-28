@@ -38,6 +38,7 @@ async function run() {
       .db("echoEstatesDB")
       .collection("properties");
     const offeredCollection = client.db("echoEstatesDB").collection("offered");
+    const reviewsCollection = client.db("echoEstatesDB").collection("reviews");
 
     // ------------Custom Middlewares----------
     const verifyToken = async (req, res, next) => {
@@ -277,7 +278,14 @@ async function run() {
       res.send(result);
     });
 
-    // PATCH request
+    app.post("/api/v1/user/add-review", verifyToken, async (req, res) => {
+      const info = req.body;
+      const result = await reviewsCollection.insertOne(info);
+
+      res.send(result);
+    });
+
+    // ------------PATCH request------------------
     app.patch(
       "/api/v1/admin/update-user/:id",
       verifyToken,
