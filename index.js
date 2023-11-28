@@ -39,7 +39,7 @@ async function run() {
       .collection("properties");
 
     // ------------Custom Middlewares----------
-    const verifyToken = (req, res, next) => {
+    const verifyToken = async (req, res, next) => {
       if (!req.headers?.authorization) {
         return res.status(401).send({ message: "Unauthorised Access" });
       }
@@ -47,12 +47,22 @@ async function run() {
 
       jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
         if (err) {
-          return res.status(403).send({ message: "Forbidden Access" });
+          return res.status(401).send({ message: "Unauthorised Access" });
         }
-        console.log(decoded);
         req.decoded = decoded;
         next();
       });
+    };
+
+    const verfiyAdmin = async (req, res, next) => {
+      const { uid } = req.decoded;
+      const user = await usersCollection.findOne({ userId: uid });
+
+      if (!(user.role === "admin")) {
+        return res.status(403).send({ message: "Forbidden Access" });
+      }
+
+      next();
     };
 
     //-------------API Endpoints--------------
@@ -77,42 +87,66 @@ async function run() {
       }
     });
 
-    app.get("/api/v1/admin/get-users", async (req, res) => {
-      const result = await usersCollection.find().toArray();
-      res.send(result);
-    });
+    app.get(
+      "/api/v1/admin/get-users",
+      verifyToken,
+      verfiyAdmin,
+      async (req, res) => {
+        const result = await usersCollection.find().toArray();
+        res.send(result);
+      }
+    );
 
-    app.get("/api/v1/agent/added-properties/:id", async (req, res) => {
-      const id = req.params.id;
-      const result = await propertyCollection.find({ agent_id: id }).toArray();
-      res.send(result);
-    });
+    app.get(
+      "/api/v1/agent/added-properties/:id",
+      verifyToken,
+      async (req, res) => {
+        const id = req.params.id;
+        const result = await propertyCollection
+          .find({ agent_id: id })
+          .toArray();
+        res.send(result);
+      }
+    );
 
-    app.get("/api/v1/user/verified-properties", async (req, res) => {
-      const { search } = req.query;
+    app.get(
+      "/api/v1/user/verified-properties",
+      verifyToken,
+      async (req, res) => {
+        const { search } = req.query;
 
-      const filter = {
-        $and: [
-          { verification_status: "verified" },
-          { property_title: { $regex: new RegExp(search, "i") } },
-        ],
-      };
-      const result = await propertyCollection.find(filter).toArray();
-      res.send(result);
-    });
+        const filter = {
+          $and: [
+            { verification_status: "verified" },
+            { property_title: { $regex: new RegExp(search, "i") } },
+          ],
+        };
+        const result = await propertyCollection.find(filter).toArray();
+        res.send(result);
+      }
+    );
 
-    app.get("/api/v1/admin/agent-properties", async (req, res) => {
-      const result = await propertyCollection.find().toArray();
-      res.send(result);
-    });
+    app.get(
+      "/api/v1/admin/agent-properties",
+      verifyToken,
+      verfiyAdmin,
+      async (req, res) => {
+        const result = await propertyCollection.find().toArray();
+        res.send(result);
+      }
+    );
 
-    app.get("/api/v1/user/property/details/:id", async (req, res) => {
-      const id = req.params.id;
-      const result = await propertyCollection.findOne({
-        _id: new ObjectId(id),
-      });
-      res.send(result);
-    });
+    app.get(
+      "/api/v1/user/property/details/:id",
+      verifyToken,
+      async (req, res) => {
+        const id = req.params.id;
+        const result = await propertyCollection.findOne({
+          _id: new ObjectId(id),
+        });
+        res.send(result);
+      }
+    );
 
     app.get("/api/v1/user/get-wishlist/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
@@ -159,13 +193,13 @@ async function run() {
       }
     });
 
-    app.post("/api/v1/user/add-property", async (req, res) => {
+    app.post("/api/v1/user/add-property", verifyToken, async (req, res) => {
       const info = req.body;
       const result = await propertyCollection.insertOne(info);
       res.send(result);
     });
 
-    app.post("/api/v1/user/add-to-wishlist", async (req, res) => {
+    app.post("/api/v1/user/add-to-wishlist", verifyToken, async (req, res) => {
       const info = req.body;
 
       const result = await wishlistCollection.insertOne(info);
@@ -174,53 +208,68 @@ async function run() {
     });
 
     // PATCH request
-    app.patch("/api/v1/admin/update-user/:id", async (req, res) => {
-      const id = req.params.id;
+    app.patch(
+      "/api/v1/admin/update-user/:id",
+      verifyToken,
+      verfiyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
 
-      const { role } = req.query;
-      const updatedDoc = {
-        $set: {
-          role: role,
-        },
-      };
+        const { role } = req.query;
+        const updatedDoc = {
+          $set: {
+            role: role,
+          },
+        };
 
-      const result = await usersCollection.updateOne(
-        { userId: id },
-        updatedDoc
-      );
-      res.send(result);
-    });
+        const result = await usersCollection.updateOne(
+          { userId: id },
+          updatedDoc
+        );
+        res.send(result);
+      }
+    );
 
-    app.patch("/api/v1/admin/update-property/:id", async (req, res) => {
-      const id = req.params.id;
-      const { status } = req.query;
-      const query = { _id: new ObjectId(id) };
-      const updatedDoc = {
-        $set: {
-          verification_status: status,
-        },
-      };
+    app.patch(
+      "/api/v1/admin/update-property/:id",
+      verifyToken,
+      verfiyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const { status } = req.query;
+        const query = { _id: new ObjectId(id) };
+        const updatedDoc = {
+          $set: {
+            verification_status: status,
+          },
+        };
 
-      const result = await propertyCollection.updateOne(query, updatedDoc);
+        const result = await propertyCollection.updateOne(query, updatedDoc);
 
-      res.send(result);
-    });
-    app.patch("/api/v1/admin/advertise-property/:id", async (req, res) => {
-      const id = req.params.id;
-      const { status } = req.query;
-      const query = { _id: new ObjectId(id) };
-      const updatedDoc = {
-        $set: {
-          isAdvertised: status,
-        },
-      };
+        res.send(result);
+      }
+    );
+    app.patch(
+      "/api/v1/admin/advertise-property/:id",
+      verifyToken,
+      verfiyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const { status } = req.query;
+        const query = { _id: new ObjectId(id) };
+        const updatedDoc = {
+          $set: {
+            isAdvertised: status,
+          },
+        };
 
-      const result = await propertyCollection.updateOne(query, updatedDoc);
+        const result = await propertyCollection.updateOne(query, updatedDoc);
 
-      res.send(result);
-    });
+        res.send(result);
+      }
+    );
 
-    app.patch("/api/v1/user/update-user/:id", async (req, res) => {
+    app.patch("/api/v1/agent/update-property/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const info = req.body;
@@ -238,30 +287,43 @@ async function run() {
     });
 
     // DELETE request
-    app.delete("/api/v1/user/remove-wishlist/:itemId", async (req, res) => {
-      const itemId = req.params.itemId;
+    app.delete(
+      "/api/v1/user/remove-wishlist/:itemId",
+      verifyToken,
+      async (req, res) => {
+        const itemId = req.params.itemId;
 
-      const result = await wishlistCollection.deleteMany({
-        property_id: itemId,
-      });
+        const result = await wishlistCollection.deleteMany({
+          property_id: itemId,
+        });
 
-      res.send(result);
-    });
+        res.send(result);
+      }
+    );
 
-    app.delete("/api/v1/admin/delete-user/:id", async (req, res) => {
-      const id = req.params.id;
-      const result = await usersCollection.deleteOne({ userId: id });
-      res.send(result);
-    });
+    app.delete(
+      "/api/v1/admin/delete-user/:id",
+      verifyToken,
+      verfiyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const result = await usersCollection.deleteOne({ userId: id });
+        res.send(result);
+      }
+    );
 
-    app.delete("/api/v1/user/delete-property/:id", async (req, res) => {
-      const id = req.params.id;
-      const result = await propertyCollection.deleteOne({
-        _id: new ObjectId(id),
-      });
+    app.delete(
+      "/api/v1/user/delete-property/:id",
+      verifyToken,
+      async (req, res) => {
+        const id = req.params.id;
+        const result = await propertyCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
 
-      res.send(result);
-    });
+        res.send(result);
+      }
+    );
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
