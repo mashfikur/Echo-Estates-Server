@@ -78,6 +78,11 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/api/v1/admin/agent-properties", async (req, res) => {
+      const result = await propertyCollection.find().toArray();
+      res.send(result);
+    });
+
     app.get("/api/v1/user/property/details/:id", async (req, res) => {
       const id = req.params.id;
       const result = await propertyCollection.findOne({
@@ -148,6 +153,21 @@ async function run() {
         { userId: id },
         updatedDoc
       );
+      res.send(result);
+    });
+
+    app.patch("/api/v1/admin/update-property/:id", async (req, res) => {
+      const id = req.params.id;
+      const { status } = req.query;
+      const query = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          verification_status: status,
+        },
+      };
+
+      const result = await propertyCollection.updateOne(query, updatedDoc);
+
       res.send(result);
     });
 
