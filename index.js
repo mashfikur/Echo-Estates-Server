@@ -37,6 +37,7 @@ async function run() {
     const propertyCollection = client
       .db("echoEstatesDB")
       .collection("properties");
+    const offeredCollection = client.db("echoEstatesDB").collection("offered");
 
     // ------------Custom Middlewares----------
     const verifyToken = async (req, res, next) => {
@@ -176,11 +177,21 @@ async function run() {
       res.send(result);
     });
 
+    app.get(
+      "/api/v1/user/get-offered-properties/:id",
+      verifyToken,
+      async (req, res) => {
+        const id = req.params.id;
+        const result = await offeredCollection.find({ buyer_id: id }).toArray();
+        res.send(result);
+      }
+    );
+
     // -----------Create JWT Token---------------
     app.post("/api/v1/auth/create-token", async (req, res) => {
       const info = req.body;
       const token = jwt.sign(info, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: "1h",
+        expiresIn: "5h",
       });
       res.send({ token });
     });
@@ -219,6 +230,12 @@ async function run() {
 
       const result = await wishlistCollection.insertOne(info);
 
+      res.send(result);
+    });
+
+    app.post("/api/v1/user/offered", verifyToken, async (req, res) => {
+      const info = req.body;
+      const result = await offeredCollection.insertOne(info);
       res.send(result);
     });
 
