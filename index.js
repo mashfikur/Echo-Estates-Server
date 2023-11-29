@@ -135,12 +135,14 @@ async function run() {
             { property_title: { $regex: new RegExp(search, "i") } },
           ],
         };
-        const result = await propertyCollection
-          .find(filter)
-          .sort({
-            "price_range.0": sort ? (sort === "asc" ? 1 : -1) : 1,
-          })
-          .toArray();
+        const result = sort
+          ? await propertyCollection
+              .find(filter)
+              .sort({
+                "price_range.0": sort ? (sort === "asc" ? 1 : -1) : 1,
+              })
+              .toArray()
+          : await propertyCollection.find(filter).toArray();
         res.send(result);
       }
     );
