@@ -4,6 +4,8 @@ const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -251,6 +253,17 @@ async function run() {
       res.send(result);
     });
 
+    app.get(
+      "/api/v1/user/accepted-offered-properties/:id",
+      async (req, res) => {
+        const id = req.params.id;
+        const result = await offeredCollection.findOne({
+          _id: new ObjectId(id),
+        });
+        res.send(result);
+      }
+    );
+
     // -----------Create JWT Token---------------
     app.post("/api/v1/auth/create-token", async (req, res) => {
       const info = req.body;
@@ -258,6 +271,21 @@ async function run() {
         expiresIn: "5h",
       });
       res.send({ token });
+    });
+
+    // ------------Payment API-------------
+    app.post("/api/v1/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = price * 100;
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
     });
 
     //POST Requests
