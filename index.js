@@ -128,15 +128,19 @@ async function run() {
       "/api/v1/user/verified-properties",
       verifyToken,
       async (req, res) => {
-        const { search } = req.query;
-
+        const { search, sort } = req.query;
         const filter = {
           $and: [
             { verification_status: "verified" },
             { property_title: { $regex: new RegExp(search, "i") } },
           ],
         };
-        const result = await propertyCollection.find(filter).toArray();
+        const result = await propertyCollection
+          .find(filter)
+          .sort({
+            "price_range.0": sort ? (sort === "asc" ? 1 : -1) : 1,
+          })
+          .toArray();
         res.send(result);
       }
     );
@@ -260,6 +264,22 @@ async function run() {
         const result = await offeredCollection.findOne({
           _id: new ObjectId(id),
         });
+        res.send(result);
+      }
+    );
+
+    app.get(
+      "/api/v1/agent/sold-properties/:id",
+      verifyToken,
+      verfiyAgent,
+      async (req, res) => {
+        const id = req.params.id;
+        const result = await offeredCollection
+          .find({
+            $and: [{ agent_id: id }, { status: "bought" }],
+          })
+          .toArray();
+
         res.send(result);
       }
     );
