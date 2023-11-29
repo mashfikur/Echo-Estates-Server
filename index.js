@@ -210,10 +210,20 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/api/v1/admin/get-reviews", verifyToken, async (req, res) => {
+    app.get("/api/v1/public/get-reviews", async (req, res) => {
       const result = await reviewsCollection.find().toArray();
       res.send(result);
     });
+
+    app.get(
+      "/api/v1/admin/get-reviews",
+      verifyToken,
+      verfiyAdmin,
+      async (req, res) => {
+        const result = await reviewsCollection.find().toArray();
+        res.send(result);
+      }
+    );
 
     app.get(
       "/api/v1/property/get-reviews/:id",
@@ -438,6 +448,19 @@ async function run() {
       async (req, res) => {
         const id = req.params.id;
         const result = await propertyCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+
+        res.send(result);
+      }
+    );
+
+    app.delete(
+      "/api/v1/user/delete-review/:id",
+      verifyToken,
+      async (req, res) => {
+        const id = req.params.id;
+        const result = await reviewsCollection.deleteOne({
           _id: new ObjectId(id),
         });
 
