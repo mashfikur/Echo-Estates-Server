@@ -211,7 +211,11 @@ async function run() {
     });
 
     app.get("/api/v1/public/get-reviews", async (req, res) => {
-      const result = await reviewsCollection.find().toArray();
+      const result = await reviewsCollection
+        .find()
+        .sort({ _id: -1 })
+        .limit(6)
+        .toArray();
       res.send(result);
     });
 
