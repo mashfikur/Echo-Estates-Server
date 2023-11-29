@@ -448,6 +448,58 @@ async function run() {
       res.send(result);
     });
 
+    //saving transaction id
+    app.put(
+      "/api/v1/user/completed-transaction/:id",
+      verifyToken,
+      async (req, res) => {
+        const id = req.params.id;
+        const {
+          _id,
+          property_id,
+          agent_id,
+          agent_name,
+          agent_image,
+          property_title,
+          property_image,
+          property_location,
+          buyer_name,
+          buyer_email,
+          buyer_id,
+          offered_price,
+          buying_date,
+          status,
+          tranx_id,
+        } = req.body;
+
+        const updatedDoc = {
+          $set: {
+            property_id,
+            agent_id,
+            agent_name,
+            agent_image,
+            property_title,
+            property_image,
+            property_location,
+            buyer_name,
+            buyer_email,
+            buyer_id,
+            offered_price,
+            buying_date,
+            status: "bought",
+            tranx_id,
+          },
+        };
+
+        const result = await offeredCollection.updateOne(
+          { _id: new ObjectId(id) },
+          updatedDoc
+        );
+
+        res.send(result);
+      }
+    );
+
     // DELETE request
     app.delete(
       "/api/v1/user/remove-wishlist/:itemId",
