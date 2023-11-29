@@ -210,6 +210,33 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/api/v1/admin/get-reviews", verifyToken, async (req, res) => {
+      const result = await reviewsCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.get(
+      "/api/v1/property/get-reviews/:id",
+      verifyToken,
+      async (req, res) => {
+        const id = req.params.id;
+        const result = await reviewsCollection
+          .find({ property_id: id })
+          .toArray();
+
+        res.send(result);
+      }
+    );
+
+    app.get("/api/v1/user/get-reviews/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const result = await reviewsCollection
+        .find({ reviewer_id: id })
+        .toArray();
+
+      res.send(result);
+    });
+
     // -----------Create JWT Token---------------
     app.post("/api/v1/auth/create-token", async (req, res) => {
       const info = req.body;
