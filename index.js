@@ -333,6 +333,12 @@ async function run() {
       }
     });
 
+    app.get("/api/v1/blog/:id/details", async (req, res) => {
+      const id = req.params.id;
+      const result = await blogsCollection.findOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
+
     // -----------Create JWT Token---------------
     app.post("/api/v1/auth/create-token", async (req, res) => {
       const info = req.body;
@@ -363,7 +369,7 @@ async function run() {
 
       const { userId, userImage } = userInfo;
       const user = await usersCollection.findOne({ userId: userId });
-      
+
       if (!user) {
         const result = await usersCollection.insertOne(userInfo);
         res.send(result);
