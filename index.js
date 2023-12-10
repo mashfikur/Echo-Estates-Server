@@ -41,6 +41,7 @@ async function run() {
       .collection("properties");
     const offeredCollection = client.db("echoEstatesDB").collection("offered");
     const reviewsCollection = client.db("echoEstatesDB").collection("reviews");
+    const blogsCollection = client.db("echoEstatesDB").collection("blogs");
 
     // ------------Custom Middlewares----------
     const verifyToken = async (req, res, next) => {
@@ -187,6 +188,16 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/api/check-aggregate/:id", async (req, res) => {
+      const id = req.params.id;
+
+      const property = await propertyCollection.findOne({
+        _id: new ObjectId(id),
+      });
+
+      return property;
+    });
+
     app.get(
       "/api/v1/user/get-offered-properties/:id",
       verifyToken,
@@ -286,6 +297,42 @@ async function run() {
       }
     );
 
+    // get all blogs
+    app.get("/api/v1/user/get-blogs", async (req, res) => {
+      const query = parseInt(req.query?.limit);
+      const pipeline = [
+        {
+          $lookup: {
+            from: "users",
+            localField: "author_id",
+            foreignField: "userId",
+            as: "author_info",
+          },
+        },
+        {
+          $unwind: "$author_info",
+        },
+        {
+          $project: {
+            "author_info._id": 0,
+            "author_info.role": 0,
+            author_id: 0,
+            "author_info.userId": 0,
+          },
+        },
+      ];
+      if (query) {
+        const result = await blogsCollection
+          .aggregate(pipeline)
+          .limit(query)
+          .toArray();
+        return res.send(result);
+      } else {
+        const result = await blogsCollection.aggregate(pipeline).toArray();
+        return res.send(result);
+      }
+    });
+
     // -----------Create JWT Token---------------
     app.post("/api/v1/auth/create-token", async (req, res) => {
       const info = req.body;
@@ -314,16 +361,25 @@ async function run() {
     app.post("/api/v1/add-user", async (req, res) => {
       const userInfo = req.body;
 
-      const { userId } = userInfo;
-
+      const { userId, userImage } = userInfo;
       const user = await usersCollection.findOne({ userId: userId });
-
+      
       if (!user) {
         const result = await usersCollection.insertOne(userInfo);
         res.send(result);
+        console.log("user created");
+        return;
+      } else if (!user.userImage.length) {
+        const result = await usersCollection.updateOne(
+          { _id: user._id },
+          { $set: { userImage: userImage } }
+        );
+        res.send({ result });
+        console.log("user updated");
         return;
       } else {
         res.send({ message: "User Already Exists" });
+        console.log("user exists");
         return;
       }
     });
@@ -455,15 +511,49 @@ async function run() {
       res.send(result);
     });
 
+    app.patch("/api/v1/userinfo-update", async (req, res) => {
+      const query = { userImage: { $exists: false } };
+      const updatedDoc = {
+        $set: {
+          userImage: "",
+        },
+      };
+
+      const result = await usersCollection.updateMany(query, updatedDoc);
+      res.send(result);
+    });
+
     app.patch("/api/v1/agent/change-property-status/:id", async (req, res) => {
       const id = req.params.id;
+      console.log(id);
       const filter = { _id: new ObjectId(id) };
-      const { status } = req.query;
+      const { status, property } = req.query;
+      console.log(status, property);
       const updatedDoc = {
         $set: {
           status: status,
         },
       };
+
+      const newupdateDoc = {
+        $set: {
+          status: "rejected",
+        },
+      };
+
+      const updateRest = await offeredCollection.updateMany(
+        {
+          $and: [
+            { _id: { $not: new ObjectId(id) } },
+            {
+              property_id: property,
+            },
+          ],
+        },
+        newupdateDoc
+      );
+
+      console.log(updateRest);
 
       const result = await offeredCollection.updateOne(filter, updatedDoc);
 
